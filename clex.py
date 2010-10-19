@@ -112,8 +112,7 @@ class Tokenizer(object):
                 (r"//[^\n]*\n"             , None),
                 ])
         self.scanner.scan(string)
-    def scan(self, string):
-        self.scanner.scan(string)
+        self.result.append(Token("terminal", ""))
     def __iter__(self):
         return iter(self.result)
     def reserve(self, scanner, s):
