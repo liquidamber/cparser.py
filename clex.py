@@ -10,6 +10,8 @@ class Token(object):
         return self.tokentype
     def get_val(self):
         return self.value
+    def give_back(self):
+        return [self]
 
 class Tokenizer(object):
     def __init__(self, string):
