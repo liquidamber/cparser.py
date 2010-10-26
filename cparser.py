@@ -38,7 +38,7 @@ class SelectExpr(BinExpr):
     def __str__(self):
         return "%s[%s]" % ( str(self.a), str(self.b) )
     def give_back(self):
-        return self.a.give_back() + [Token("[","")] + self.b.give_back() + [Token("]","")]
+        return self.a.give_back() + [clex.Token("[","")] + self.b.give_back() + [clex.Token("]","")]
 
 class FuncExpr(BinExpr):
     def __init__(self, a, b):
@@ -46,7 +46,7 @@ class FuncExpr(BinExpr):
     def __str__(self):
         return "%s(%s)" % ( str(self.a), str(self.b) )
     def give_back(self):
-        return self.a.give_back() + [Token("(","")] + self.b.give_back() + [Token(")","")]
+        return self.a.give_back() + [clex.Token("(","")] + self.b.give_back() + [clex.Token(")","")]
 
 class ParenExpr(UniExpr):
     def __init__(self, a):
@@ -55,15 +55,15 @@ class ParenExpr(UniExpr):
     def __str__(self):
         return "(%s)" % str(self.a)
     def give_back(self):
-        return [Token("(","")] + self.a.give_back() + [Token(")","")]
+        return [clex.Token("(","")] + self.a.give_back() + [clex.Token(")","")]
 
 class CastExpr(UniExpr):
     def __init__(self, a, typename):
         UniExpr.__init__(self, a, typename)
     def __str__(self):
-        return "(%s)%s" % str(self.op), str(self.a)
+        return "%s%s" % (str(self.op), str(self.a))
     def give_back(self):
-        return [Token("(","")] + self.op.give_back()+[Token(")","")]+self.a.give_back()
+        return self.op.give_back()+self.a.give_back()
 
 class CondExpr(Expr):
     def __init__(self, a, b, c):
@@ -74,8 +74,8 @@ class CondExpr(Expr):
     def __str__(self):
         return "%s ? %s : %s" % (str(self.a), str(self.b), str(self.c))
     def give_back(self):
-        return (self.a.give_back()+[Token("?","")]+
-                self.b.give_back()+[Token(":","")]+
+        return (self.a.give_back()+[clex.Token("?","")]+
+                self.b.give_back()+[clex.Token(":","")]+
                 self.c.give_back())
 
 class ExprList(object):
@@ -83,12 +83,25 @@ class ExprList(object):
         self.list = [] if a is None else [a]
     def __str__(self):
         return ", ".join([str(x) for x in self.list])
-    def append(x):
+    def append(self,x):
         self.list.append(x)
     def give_back(self):
-        ret = [self.list[0].give_back()]
+        ret = self.list[0].give_back()
         for i in self.list[1:]:
-            ret += [Token(",", "") , i.give_back()]
+            ret += [clex.Token(",", "")] + i.give_back()
+        return ret
+
+class TokenList(object):
+    def __init__(self, a=None):
+        self.list = [] if a is None else [a]
+    def __str__(self):
+        return " ".join([str(x) for x in self.list])
+    def append(self,x):
+        self.list.append(x)
+    def give_back(self):
+        ret = self.list[0].give_back()
+        for i in self.list[1:]:
+            ret += i.give_back()
         return ret
 
 class CParserSyntaxError(BaseException):
@@ -115,6 +128,31 @@ class CParser(object):
         if not len(self.rev):
             self.rev.append(self.get_tok())
         return self.rev[-1]
+
+    def parse_paren_match(self):
+        a = self.get_tok()
+        l = TokenList(a)
+        if a.get_type() != "(":
+            raise CParserSyntaxError, "Not open paren"+str(a)
+        while True:
+            a = self.cur_tok()
+            if a.get_type() == "(":
+                l.append(self.parse_paren_match())
+            else:
+                l.append(a)
+                self.get_tok()
+                if a.get_type() == ")":
+                    return l
+
+    def is_type_name(self, a):
+        at = a.get_type()
+        if (at == "void" or at == "char"  or at == "short"  or at == "int" or
+            at == "long" or at == "float" or at == "double" or at == "signed" or
+            at == "unsigned" or at == "struct" or at == "union" or at == "enum" or
+            at == "const" or at == "volatile"):
+            return True
+        else:
+            return False
 
     def parse_prim_expr(self):
         a = self.get_tok()
@@ -181,27 +219,32 @@ class CParser(object):
               atype == "-" or atype == "~" or atype == "!"):
             b = self.parse_cast_expr()
             return UniExpr(b, a)
-#Unsupport for sizeof(int)
+#Not complete support for sizeof
         elif atype == "sizeof":
-            b = self.parse_unary_expr()
+            if self.cur_tok().get_type() != "(":
+                b = self.parse_unary_expr()
+            else:
+                b = self.parse_paren_match()
             return UniExpr(b, a)
         else:
             self.rev_tok(a)
             a = self.parse_post_expr()
             return a
 
+#Not support for cast (typedef-name)
     def parse_cast_expr(self):
         a = self.cur_tok()
-        if a.get_type == "(":
-            self.get_tok()
-            a = self.parse_type_name()
-            b = self.get_tok()
-            if b.get_type != ")":
-                raise CParserSyntaxError, "Paren Not Match"+str(b)
-            b = self.parse_cast_expr()
-            return CastExpr(b, a)
-        else:
-            return self.parse_unary_expr()
+        if a.get_type() == "(":
+            a = self.get_tok()
+            b = self.cur_tok()
+            if self.is_type_name(b):
+                self.rev_tok(a)
+                a = self.parse_paren_match()
+                b = self.parse_cast_expr()
+                return CastExpr(b, a)
+            else:
+                self.rev_tok(a)
+        return self.parse_unary_expr()
 
     def parse_mult_expr(self):
         a = self.parse_cast_expr()
@@ -331,13 +374,14 @@ class CParser(object):
         while op.get_type() == ",":
             self.get_tok()
             a.append(self.parse_assign_expr())
+            op = self.cur_tok()
         return a
 
-def test():
-    # x = CParser(r'int x <<= (4 > 5 && 5 == k%2&3!=4 ? a[2] : f(++*ptr)), char * hoge = "TEST" "This\tis\ta\"Pen\n"')
-    x = CParser(r'y = fuga ? x==5 : (++y + 20) * 8 & (4 >> 2 | 3) && org--')
+def test(string):
+    x = CParser(string)
     p = x.parse_expr()
     print p
 
 if __name__=="__main__":
-    test()
+    test(r'x <<= (4 > 5 && 5 == k%2&3!=4 ? a[2] : f(++*ptr)), hoge = "This\tis\ta\"Pen\n"')
+    test(r'y = fuga ? x==5 : (short)(++y + 20) * 8 & (4 >> 2 | 3) && org--')
