@@ -129,11 +129,23 @@ class CParser(object):
             self.rev.append(self.get_tok())
         return self.rev[-1]
 
+    def parse_tok(self, tok_type, format="unexpected token: %s"):
+        t = self.get_tok()
+        if t.get_type() != tok_type:
+            raise CParserSyntaxError, format % str(t)
+        return t
+
+    def parse_tok_if_possible(self, tok_type):
+        t = self.cur_tok()
+        if t.get_type() != tok_type:
+            return False
+        else:
+            self.get_tok()
+            return (True, t)
+
     def parse_paren_match(self):
-        a = self.get_tok()
+        a = self.parse_tok("(", "not paren open: ")
         l = TokenList(a)
-        if a.get_type() != "(":
-            raise CParserSyntaxError, "Not open paren"+str(a)
         while True:
             a = self.cur_tok()
             if a.get_type() == "(":
