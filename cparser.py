@@ -32,30 +32,32 @@ class PostExpr(UniExpr):
     def give_back(self):
         return self.a.give_back() + self.op.give_back()
 
-class SelectExpr(BinExpr):
-    def __init__(self, a, b):
+class ParenOperateExpr(BinExpr):
+    def __init__(self, a, b, beg, end):
+        self.beg = beg
+        self.end = end
         BinExpr.__init__(self, a, None, b)
+    def give_back(self):
+        return self.a.give_back() + [self.beg] + self.b.give_back() + [self.end]
+
+class SelectExpr(ParenOperateExpr):
     def __str__(self):
         return "%s[%s]" % ( str(self.a), str(self.b) )
-    def give_back(self):
-        return self.a.give_back() + [clex.Token("[","")] + self.b.give_back() + [clex.Token("]","")]
 
-class FuncExpr(BinExpr):
-    def __init__(self, a, b):
-        BinExpr.__init__(self, a, None, b)
+class FuncExpr(ParenOperateExpr):
     def __str__(self):
         return "%s(%s)" % ( str(self.a), str(self.b) )
-    def give_back(self):
-        return self.a.give_back() + [clex.Token("(","")] + self.b.give_back() + [clex.Token(")","")]
 
 class ParenExpr(UniExpr):
-    def __init__(self, a):
+    def __init__(self, a, beg, end):
+        self.beg = beg
+        self.end = end
         UniExpr.__init__(self, a, None)
 #        print "(%s)" % a
     def __str__(self):
         return "(%s)" % str(self.a)
     def give_back(self):
-        return [clex.Token("(","")] + self.a.give_back() + [clex.Token(")","")]
+        return [self.beg] + self.a.give_back() + [self.end]
 
 class CastExpr(UniExpr):
     def __init__(self, a, typename):
@@ -66,16 +68,18 @@ class CastExpr(UniExpr):
         return self.op.give_back()+self.a.give_back()
 
 class CondExpr(Expr):
-    def __init__(self, a, b, c):
+    def __init__(self, a, b, c, cond_op_if, cond_op_else):
         self.a = a
         self.b = b
         self.c = c
+        self.cond_op_if = cond_op_if
+        self.cond_op_else = cond_op_else
 #        print "(%s ? %s : %s)" % (a, b, c)
     def __str__(self):
         return "%s ? %s : %s" % (str(self.a), str(self.b), str(self.c))
     def give_back(self):
-        return (self.a.give_back()+[clex.Token("?","")]+
-                self.b.give_back()+[clex.Token(":","")]+
+        return (self.a.give_back()+self.cond_op_if.give_back()+
+                self.b.give_back()+self.cond_op_else.give_back()+
                 self.c.give_back())
 
 class ExprList(object):
@@ -83,12 +87,12 @@ class ExprList(object):
         self.list = [] if a is None else [a]
     def __str__(self):
         return ", ".join([str(x) for x in self.list])
-    def append(self,x):
+    def append(self, x):
         self.list.append(x)
     def give_back(self):
         ret = self.list[0].give_back()
         for i in self.list[1:]:
-            ret += [clex.Token(",", "")] + i.give_back()
+            ret += [clex.Token(",", "", -1, -1)] + i.give_back()
         return ret
 
 class TokenList(object):
@@ -138,10 +142,10 @@ class CParser(object):
     def parse_tok_if_possible(self, tok_type):
         t = self.cur_tok()
         if t.get_type() != tok_type:
-            return False
+            return None
         else:
             self.get_tok()
-            return (True, t)
+            return t
 
     def parse_paren_match(self):
         a = self.parse_tok("(", "not paren open: ")
@@ -171,12 +175,10 @@ class CParser(object):
         if(a.get_type() == "literal" or a.get_type() == "identifier"):
             return a
         elif(a.get_type() == "("):
+            op1 = a
             a = self.parse_expr()
-            b = self.get_tok()
-            if(b.get_type() == ")"):
-                return ParenExpr(a)
-            else:
-                raise CParserSyntaxError, "Paren Match Error: "+str(b)
+            op2 = self.parse_tok(")", "paren close expected: %s")
+            return ParenExpr(a, op1, op2)
         else:
             raise CParserSyntaxError, "Not Primitive Expression: "+str(a)
 
@@ -192,14 +194,14 @@ class CParser(object):
             elif(op.get_type() == "++" or op.get_type() == "--"):
                 a = PostExpr(a, op)
             elif(op.get_type() == "("):
-                b = self.parse_arg_expr_list()
-                a = FuncExpr(a, b)
+                b, c = self.parse_arg_expr_list()
+                a = FuncExpr(a, b, op, c)
             elif(op.get_type() == "["):
                 b = self.parse_expr()
                 c = self.get_tok()
                 if(c.get_type() != "]"):
                     raise CParserSyntaxError, "Paren Match Error"+str(b)
-                a = FuncExpr(a, b)
+                a = SelectExpr(a, b, op, c)
             else:
                 self.rev_tok(op)
                 return a
@@ -217,7 +219,7 @@ class CParser(object):
             l.append(b)
             op = self.get_tok()
         if op.get_type() == ")":
-            return l
+            return (l, op)
         else:
             raise CParserSyntaxError, "Paren Match Error"+str(b)
 
@@ -348,15 +350,13 @@ class CParser(object):
 
     def parse_cond_expr(self):
         cond = self.parse_logic_or_expr()
-        if self.cur_tok().get_type() != "?":
+        op1 = self.parse_tok_if_possible("?")
+        if not op1:
             return cond
-        op = self.get_tok()
         b  = self.parse_expr()
-        op = self.get_tok()
-        if op.get_type() != ":":
-            raise CParserSyntaxError, "Conditonal Operator Error"+str(op)
+        op2 = self.parse_tok(":", "conditonal operator expected: %s")
         c  = self.parse_cond_expr()
-        return CondExpr(cond, b, c)
+        return CondExpr(cond, b, c, op1, op2)
 
     def parse_assign_expr(self):
         while True:
@@ -395,5 +395,5 @@ def test(string):
     print p
 
 if __name__=="__main__":
-    test(r'x <<= (4 > 5 && 5 == k%2&3!=4 ? a[2] : f(++*ptr)), hoge = "This\tis\ta\"Pen\n"')
+    test(r'x <<= (4 > 5 && 5 == k%2&3!=4 ? a[2] : f(++*ptr, NULL)), hoge = "This\tis\ta\"Pen\n"')
     test(r'y = fuga ? x==5 : (short)(++y + 20) * 8 & (4 >> 2 | 3) && org--')
