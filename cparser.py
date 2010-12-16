@@ -109,6 +109,16 @@ class TokenList(object):
             ret += i.give_back()
         return ret
 
+class TokenList(object):
+    def __init__(self):
+        self.list = []
+    def __str__(self):
+        return " ".join([str(x) for x in self.list])
+    def append(self,x):
+        self.list.append(x)
+    def give_back(self):
+        return [] + self.list
+
 class CParserSyntaxError(BaseException):
     pass
 
