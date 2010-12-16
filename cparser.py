@@ -113,8 +113,8 @@ class CParserSyntaxError(BaseException):
     pass
 
 class CParser(object):
-    def __init__(self, string):
-        self.tokenizer = clex.Tokenizer(string)
+    def __init__(self, string, tokenizer=clex.Tokenizer):
+        self.tokenizer = tokenizer(string)
         self.tok_iter  = iter(self.tokenizer)
         self.rev = []
 
