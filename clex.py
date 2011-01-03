@@ -20,7 +20,7 @@ class Tokenizer(object):
         self.result = []
         self.linecount = 0
         self.charcount = 0
-        self.scanner = re.Scanner([
+        self.initializer = [
                 ("auto"     , self.reserve),
                 ("break"    , self.reserve),
                 ("case"     , self.reserve),
@@ -119,7 +119,8 @@ class Tokenizer(object):
                 (r"[ \t\v\f]+"             , self.empty),
                 (r"\r\n?"                  , self.newline),
                 (r"\n"                     , self.newline),
-                ])
+                ]
+        self.scanner = re.Scanner(self.initializer)
         self.scanner.scan(string)
         self.result.append(Token("terminal", "", self.linecount, self.charcount))
     def __iter__(self):
