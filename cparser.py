@@ -387,6 +387,17 @@ class CParser(object):
             op = self.cur_tok()
         return a
 
+    def parse_jump_stmt(self):
+        if (op.get_type() == "goto"):
+            pass
+        elif (op.get_type() == "continue" or
+              op.get_type() == "break"):
+            pass
+        elif (op.get_type() == "return"):
+            pass
+        else:
+            raise CParserSyntaxError
+
 def test(string):
     x = CParser(string)
     p = x.parse_expr()
