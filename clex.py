@@ -49,6 +49,7 @@ class Tokenizer(object):
                 ("static"   , self.reserve),
                 ("struct"   , self.reserve),
                 ("switch"   , self.reserve),
+                ("sync"     , self.reserve),
                 ("typedef"  , self.reserve),
                 ("union"    , self.reserve),
                 ("unsigned" , self.reserve),
