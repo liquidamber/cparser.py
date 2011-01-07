@@ -6,8 +6,10 @@ class Token(object):
         self.value     = value
         self.linecount = line
         self.charcount = char
+        self.whitespace = ""
     def __str__(self):
-        return str(self.value) if self.value else str(self.tokentype)
+        return (str(self.value) if self.value else str(self.tokentype)
+                + self.whitespace)
     def get_type(self):
         return self.tokentype
     def get_val(self):
@@ -144,9 +146,11 @@ class Tokenizer(object):
         self.charcount += len(s)
     def empty(self, scanner, s):
         self.charcount += len(s)
+        self.result[-1].whitespace += s
     def newline(self, scanner, s):
         self.linecount += 1
         self.charcount  = 0
+        self.result[-1].whitespace += s
     def comment_block(self, scanner, s):
         self.linecount += s.count('\n')
         self.charcount  = len(s) - s.rfind('\n') - 1
