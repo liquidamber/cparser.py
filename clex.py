@@ -40,7 +40,7 @@ class Tokenizer(object):
                 ("int"      , self.reserve),
                 ("long"     , self.reserve),
                 ("register" , self.reserve),
-                ("return "  , self.reserve),
+                ("return"   , self.reserve),
                 ("short"    , self.reserve),
                 ("signed"   , self.reserve),
                 ("sizeof"   , self.reserve),
