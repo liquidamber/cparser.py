@@ -56,14 +56,16 @@ class Tokenizer(object):
 
                 (r"[a-zA-Z_]\w*" , self.identifier),
 
+            # real
+                (r"\d+[Ee][+-]?\d+[fFlL]?"         , self.constant),
+                (r"\d*\.\d+([Ee][+-]?\d+)?[fFlL]?" , self.constant),
+                (r"\d+\.\d*([Ee][+-]?\d+)?[fFlL]?" , self.constant),
+
+            # integer
                 (r"0[xX][a-fA-F0-9]+[uUlL]{0,2}"   , self.constant),
                 (r"0\d+[uUlL]{0,2}"                , self.constant),
                 (r"\d+[uUlL]{0,2}"                 , self.constant),
                 (r"[a-zA-Z_]?'(\\.|[^\\'])*'"      , self.constant),
-
-                (r"\d+[Ee][+-]?\d+[fFlL]?"         , self.constant),
-                (r"\d*\.\d+([Ee][+-]?\d+)?[fFlL]?" , self.constant),
-                (r"\d+\.\d*([Ee][+-]?\d+)?[fFlL]?" , self.constant),
 
                 (r'[a-zA-Z_]?"(\\.|[^\\"])*"' , self.string_literal),
 
