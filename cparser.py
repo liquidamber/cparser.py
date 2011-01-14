@@ -94,7 +94,7 @@ class SimpleList(MyList):
     def __str__(self):
         return "".join([str(x) for x in self.list])
     def give_back(self):
-        return [i.give_back() for i in self.list]
+        return reduce(lambda x,y: x+y, [i.give_back() for i in self.list])
 
 class ExprList(MyList):
     def __str__(self):
