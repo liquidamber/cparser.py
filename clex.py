@@ -8,7 +8,7 @@ class Token(object):
         self.charcount = char
         self.whitespace = ""
     def __str__(self):
-        return (str(self.value) if self.value else str(self.tokentype)
+        return ((str(self.value) if self.value else str(self.tokentype))
                 + self.whitespace)
     def get_type(self):
         return self.tokentype
