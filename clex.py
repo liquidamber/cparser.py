@@ -147,11 +147,11 @@ class Tokenizer(object):
         self.charcount += len(s)
     def empty(self, scanner, s):
         self.charcount += len(s)
-        self.result[-1].whitespace += s
+        len(result) > 0 and self.result[-1].whitespace += s
     def newline(self, scanner, s):
         self.linecount += 1
         self.charcount  = 0
-        self.result[-1].whitespace += s
+        len(result) > 0 and self.result[-1].whitespace += s
     def comment_block(self, scanner, s):
         self.linecount += s.count('\n')
         self.charcount  = len(s) - s.rfind('\n') - 1
