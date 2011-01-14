@@ -83,11 +83,18 @@ class CondExpr(Expr):
                 self.b.give_back()+self.cond_op_else.give_back()+
                 self.c.give_back())
 
+
 class MyList(object):
     def __init__(self, a=None):
         self.list = [] if a is None else [a]
     def append(self, x):
         self.list.append(x)
+
+class SimpleList(MyList):
+    def __str__(self):
+        return "".join([str(x) for x in self.list])
+    def give_back(self):
+        return [i.give_back() for i in self.list]
 
 class ExprList(MyList):
     def __str__(self):
@@ -98,11 +105,10 @@ class ExprList(MyList):
             ret += [clex.Token(",", "", -1, -1)] + i.give_back()
         return ret
 
-class TokenList(MyList):
+class TokenList(SimpleList):
     def __str__(self):
         return " ".join([str(x) for x in self.list])
-    def give_back(self):
-        return [i.give_back() for i in self.list]
+
 
 class Stmt(object):
     pass
