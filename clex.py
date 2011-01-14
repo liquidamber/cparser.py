@@ -147,17 +147,17 @@ class Tokenizer(object):
         self.charcount += len(s)
     def empty(self, scanner, s):
         self.charcount += len(s)
-        len(result) > 0 and self.result[-1].whitespace += s
+        if len(self.result) > 0: self.result[-1].whitespace += s
     def newline(self, scanner, s):
         self.linecount += 1
         self.charcount  = 0
-        len(result) > 0 and self.result[-1].whitespace += s
+        if len(self.result) > 0: self.result[-1].whitespace += s
     def comment_block(self, scanner, s):
         self.linecount += s.count('\n')
         self.charcount  = len(s) - s.rfind('\n') - 1
 
 def test():
-    x = Tokenizer(r"""for(int i=9l; i<100; ++i) {
+    x = Tokenizer(r"""  for(int i=9l; i<100; ++i) {
    ptr += hoge[i]+fuga(x)*2 % 4 >> 2 - L'X' + '\n';
    // hoge
    a >>= (x <= 4 ? y : z);
