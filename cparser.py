@@ -578,11 +578,11 @@ class CParser(object):
         elif op == "for":
             op = self.get_tok()
             po = self.parse_tok("(")
-            e1 = self.parse_expr() if op.cur_tok().get_type() != ";" else None
+            e1 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
             s1 = self.parse_tok(";")
-            e2 = self.parse_expr() if op.cur_tok().get_type() != ";" else None
+            e2 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
             s2 = self.parse_tok(";")
-            e3 = self.parse_expr() if op.cur_tok().get_type() != ")" else None
+            e3 = self.parse_expr() if self.cur_tok().get_type() != ")" else None
             pc = self.parse_tok(")")
             stmt = self.parse_stmt()
             return ForStmt(op, po, e1, s1, e2, s2, e3, pc, stmt)
