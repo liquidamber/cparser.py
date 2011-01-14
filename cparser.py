@@ -94,7 +94,7 @@ class SimpleList(MyList):
     def __str__(self):
         return "".join([str(x) for x in self.list])
     def give_back(self):
-        return [i.give_back() for i in self.list]
+        return reduce(lambda x,y: x+y, [i.give_back() for i in self.list])
 
 class ExprList(MyList):
     def __str__(self):
@@ -578,11 +578,11 @@ class CParser(object):
         elif op == "for":
             op = self.get_tok()
             po = self.parse_tok("(")
-            e1 = self.parse_expr() if op.cur_tok().get_type() != ";" else None
+            e1 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
             s1 = self.parse_tok(";")
-            e2 = self.parse_expr() if op.cur_tok().get_type() != ";" else None
+            e2 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
             s2 = self.parse_tok(";")
-            e3 = self.parse_expr() if op.cur_tok().get_type() != ")" else None
+            e3 = self.parse_expr() if self.cur_tok().get_type() != ")" else None
             pc = self.parse_tok(")")
             stmt = self.parse_stmt()
             return ForStmt(op, po, e1, s1, e2, s2, e3, pc, stmt)
