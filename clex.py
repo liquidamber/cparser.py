@@ -19,7 +19,7 @@ class Token(object):
         return [self]
 
 class Tokenizer(object):
-    def __init__(self, string, ignore_errors=False):
+    def __init__(self, string, ignore_errors=True):
         self.result = []
         self.linecount = 0
         self.charcount = 0
