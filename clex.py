@@ -174,4 +174,7 @@ if __name__=="__main__":
     if len(sys.argv) == 1:
         test(TEST_STRING)
     else:
-        test(open(sys.argv[1]).read())
+        if sys.argv[1] == "-":
+            test(sys.stdin.read())
+        else:
+            test(open(sys.argv[1]).read())
