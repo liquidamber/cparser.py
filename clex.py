@@ -19,10 +19,11 @@ class Token(object):
         return [self]
 
 class Tokenizer(object):
-    def __init__(self, string):
+    def __init__(self, string, ignore_errors=False):
         self.result = []
         self.linecount = 0
         self.charcount = 0
+        self.ignore_errors = ignore_errors
         self.initializer = [
                 ("auto"     , self.reserve),
                 ("break"    , self.reserve),
@@ -121,10 +122,12 @@ class Tokenizer(object):
                 (r"\^"    , self.operator),
                 (r"\|"    , self.operator),
                 (r"\?"    , self.operator),
-
+                #Empty
                 (r"[ \t\v\f]+"             , self.empty),
                 (r"\r\n?"                  , self.newline),
                 (r"\n"                     , self.newline),
+                #Other
+                (r".*", self.other)
                 ]
         self.scanner = re.Scanner(self.initializer)
         self.scanner.scan(string)
@@ -156,6 +159,13 @@ class Tokenizer(object):
     def comment_block(self, scanner, s):
         self.linecount += s.count('\n')
         self.charcount  = len(s) - s.rfind('\n') - 1
+    def other(self, scanner, s):
+        if not self.ignore_errors:
+            print >>sys.stderr, "Error Token: line %d: char %d: " % (self.linecount, self.charcount) + s
+            exit(1)
+        else:
+            self.result.append(Token("other", s, self.linecount, self.charcount))
+            self.charcount += len(s)
 
 TEST_STRING = r"""for(int i=9l; i<100; ++i) {
    ptr += hoge[i]+fuga(x)*2 % 4 >> 2 - L'X' + '\n';
@@ -175,4 +185,7 @@ if __name__=="__main__":
     if len(sys.argv) == 1:
         test(TEST_STRING)
     else:
-        test(open(sys.argv[1]).read())
+        if sys.argv[1] == "-":
+            test(sys.stdin.read())
+        else:
+            test(open(sys.argv[1]).read())
