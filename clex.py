@@ -1,4 +1,5 @@
 import re
+import sys
 
 class Token(object):
     def __init__(self, tokentype, value, line, char):
@@ -155,8 +156,7 @@ class Tokenizer(object):
         self.linecount += s.count('\n')
         self.charcount  = len(s) - s.rfind('\n') - 1
 
-def test():
-    x = Tokenizer(r"""for(int i=9l; i<100; ++i) {
+TEST_STRING = r"""for(int i=9l; i<100; ++i) {
    ptr += hoge[i]+fuga(x)*2 % 4 >> 2 - L'X' + '\n';
    // hoge
    a >>= (x <= 4 ? y : z);
@@ -165,8 +165,13 @@ def test():
     **  COMMENT  **
     ***************/
 } return ptr;
-""")
+"""
+def test(string):
+    x = Tokenizer(string)
     print "\n".join(["%d %d "%(i.linecount, i.charcount) + str(i) for i in x])
 
 if __name__=="__main__":
-    test()
+    if len(sys.argv) == 1:
+        test(TEST_STRING)
+    else:
+        test(open(sys.argv[1]).read())
