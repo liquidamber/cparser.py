@@ -126,7 +126,8 @@ class Tokenizer(object):
                 (r"\r\n?"                  , self.newline),
                 (r"\n"                     , self.newline),
                 #Other
-                (r".*", self.other)
+                (r"#[^\r\n]*(?:\r\n?|\n)"  , self.directive),
+                (r".*"                     , self.other)
                 ]
         self.scanner = re.Scanner(self.initializer)
         self.scanner.scan(string)
@@ -165,6 +166,12 @@ class Tokenizer(object):
         else:
             self.result.append(Token("other", s, self.linecount, self.charcount))
             self.charcount += len(s)
+    def directive(self, scanner, s):
+        if not self.ignore_errors:
+            print >>sys.stderr, "Error Token: line %d: char %d: " % (self.linecount, self.charcount) + s
+            exit(1)
+        else:
+            self.result.append(Token("directive", s, self.linecount, self.charcount))
 
 TEST_STRING = r"""for(int i=9l; i<100; ++i) {
    ptr += hoge[i]+fuga(x)*2 % 4 >> 2 - L'X' + '\n';
