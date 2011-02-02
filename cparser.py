@@ -4,6 +4,12 @@ import clex
 class Expr:
     pass
 
+
+class EmptyExpr(Expr):
+    def __str__(self):
+        return ""
+
+
 class BinExpr(Expr):
     def __init__(self, a, op, b):
         self.a  = a
@@ -578,11 +584,11 @@ class CParser(object):
         elif op == "for":
             op = self.get_tok()
             po = self.parse_tok("(")
-            e1 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
+            e1 = self.parse_expr() if self.cur_tok().get_type() != ";" else EmptyExpr()
             s1 = self.parse_tok(";")
-            e2 = self.parse_expr() if self.cur_tok().get_type() != ";" else None
+            e2 = self.parse_expr() if self.cur_tok().get_type() != ";" else EmptyExpr()
             s2 = self.parse_tok(";")
-            e3 = self.parse_expr() if self.cur_tok().get_type() != ")" else None
+            e3 = self.parse_expr() if self.cur_tok().get_type() != ")" else EmptyExpr()
             pc = self.parse_tok(")")
             stmt = self.parse_stmt()
             return ForStmt(op, po, e1, s1, e2, s2, e3, pc, stmt)
@@ -642,6 +648,6 @@ if __name__=="__main__":
     test(r'x <<= (4 > 5 && 5 == k%2&3!=4 ? a[2] : f(++*ptr, NULL)), hoge = "This\tis\ta\"Pen\n"')
     test(r'y = fuga ? x==5 : (short)(++y + 20) * 8 & (4 >> 2 | 3) && org--')
     stmt_test("""if (x == 480 || x != a) {
-    y= (int)5.60 >> 3; continue;
+    y= (int)5.60 >> 3; continue; for(i=4; ; ++k) { break; }
     } else return ((stmt_t *)x)->a.b;""")
     stmt_test(r"switch (x) {case 1: x += 5; goto LABEL0; case 5: case 9: x *= 3; break; default : x = 0; LABEL0 : return 5; }")
