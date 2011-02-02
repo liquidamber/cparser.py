@@ -37,6 +37,7 @@ class Tokenizer(object):
                 ("else"     , self.reserve),
                 ("enum"     , self.reserve),
                 ("extern"   , self.reserve),
+                ("final"    , self.reserve),
                 ("float"    , self.reserve),
                 ("for"      , self.reserve),
                 ("goto"     , self.reserve),
