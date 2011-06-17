@@ -95,6 +95,8 @@ class MyList(object):
         self.list = [] if a is None else [a]
     def append(self, x):
         self.list.append(x)
+    def clear(self):
+        self.list[:] = []
 
 class SimpleList(MyList):
     def __str__(self):
