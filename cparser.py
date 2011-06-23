@@ -9,6 +9,18 @@ class EmptyExpr(Expr):
     def __str__(self):
         return ""
 
+class StrObject(object):
+    def __init__(self, string):
+        self.string = string
+    def __str__(self):
+        return self.string
+    def apply_function(self, func):
+        self.string = func(self.string)
+        return func(self)
+
+class StrExpr(StrObject, Expr):
+    def __init__(self):
+        StrObject.__init__(self)
 
 class BinExpr(Expr):
     def __init__(self, a, op, b):
@@ -20,6 +32,18 @@ class BinExpr(Expr):
         return str(self.a)+str(self.op)+str(self.b)
     def give_back(self):
         return self.a.give_back() + self.op.give_back() + self.b.give_back()
+    def apply_function(self, func):
+        try:
+            self.a  = self.a.apply_function(func)
+            self.b  = self.b.apply_function(func)
+            self.op = self.op.apply_function(func)
+        except:
+            print "===apply function error==="
+            print "a:", self.a
+            print "op:", self.op
+            print "b:", self.b
+            raise
+        return func(self)
 
 class UniExpr(Expr):
     def __init__(self, a, op):
@@ -30,6 +54,10 @@ class UniExpr(Expr):
         return str(self.op)+str(self.a)
     def give_back(self):
         return self.op.give_back() + self.a.give_back()
+    def apply_function(self, func):
+        self.a  = self.a.apply_function(func)
+        self.op = self.op.apply_function(func)
+        return func(self)
 
 class PostExpr(UniExpr):
     def __init__(self, *args):
@@ -46,6 +74,10 @@ class ParenOperateExpr(BinExpr):
         BinExpr.__init__(self, a, None, b)
     def give_back(self):
         return self.a.give_back() + [self.beg] + self.b.give_back() + [self.end]
+    def apply_function(self, func):
+        self.a = self.a.apply_function(func)
+        self.b = self.b.apply_function(func)
+        return func(self)
 
 class SelectExpr(ParenOperateExpr):
     def __str__(self):
@@ -65,6 +97,9 @@ class ParenExpr(UniExpr):
         return "(%s)" % str(self.a)
     def give_back(self):
         return [self.beg] + self.a.give_back() + [self.end]
+    def apply_function(self, func):
+        self.a = self.a.apply_function(func)
+        return func(self)
 
 class CastExpr(UniExpr):
     def __init__(self, a, typename):
@@ -88,6 +123,11 @@ class CondExpr(Expr):
         return (self.a.give_back()+self.cond_op_if.give_back()+
                 self.b.give_back()+self.cond_op_else.give_back()+
                 self.c.give_back())
+    def apply_function(self, func):
+        self.a = self.a.apply_function(func)
+        self.b = self.b.apply_function(func)
+        self.c = self.c.apply_function(func)
+        return func(self)
 
 
 class MyList(object):
@@ -97,6 +137,10 @@ class MyList(object):
         self.list.append(x)
     def clear(self):
         self.list[:] = []
+    def apply_function(self, func):
+        for i,x in enumerate(self.list):
+            self.list[i] = x.apply_function(func)
+        return func(self)
 
 class SimpleList(MyList):
     def __str__(self):
@@ -121,6 +165,10 @@ class TokenList(SimpleList):
 class Stmt(object):
     pass
 
+class StrStmt(StrObject, Stmt):
+    def __init__(self):
+        StrObject.__init__(self)
+
 class JumpStmt(Stmt):
     def __init__(self, op, semic, target=None):
         self.op = op
@@ -130,6 +178,9 @@ class JumpStmt(Stmt):
         return "".join((str(self.op),
                         " " + str(self.target) if self.target is not None else "",
                         str(self.semic)))
+    def apply_function(self, func):
+        self.target = self.target.apply_function(func)
+        return func(self)
 
 class WordHeadStmt(Stmt):
     def __init__(self, op, open_paren, expr, close_paren, stmt):
@@ -144,6 +195,10 @@ class WordHeadStmt(Stmt):
                 str(self.expr) +
                 str(self.pc) +
                 str(self.stmt))
+    def apply_function(self, func):
+        self.expr = self.expr.apply_function(func)
+        self.stmt = self.stmt.apply_function(func)
+        return func(self)
 
 class IfStmt(WordHeadStmt):
     def __init__(self, op, po, expr, pc, then_stmt, else_word=None, else_stmt=None):
@@ -155,6 +210,10 @@ class IfStmt(WordHeadStmt):
         if self.else_word is None:
             return s
         return s + str(self.else_word) + str(self.else_stmt)
+    def apply_function(self, func):
+        if self.else_word is not None:
+            self.else_stmt = self.else_stmt.apply_function(func)
+        return WordHeadStmt.apply_function(self, func)
 
 class DoWhileStmt(WordHeadStmt):
     def __init__(self, do_word, stmt, while_word, po, expr, pc, semic):
@@ -175,6 +234,9 @@ class ForExprs(object):
         self.exprs = (expr_init, semic_a, expr_cont, semic_b, expr_step)
     def __str__(self):
         return "".join(str(x) if x is not None else " " for x in self.exprs)
+    def apply_function(self, func):
+        self.exprs = tuple(i.apply_function(func) for i in self.exprs)
+        return func(self)
 
 class ForStmt(WordHeadStmt):
     def __init__(self, op, po, ei, sa, ec, sb, es, pc, stmt):
@@ -187,6 +249,9 @@ class ExprStmt(Stmt):
         self.semic = semic
     def __str__(self):
         return "".join(map(str, (self.expr, self.semic)))
+    def apply_function(self, func):
+        self.expr = self.expr.apply_function(func)
+        return func(self)
 
 class LabelStmt(Stmt):
     def __init__(self, label, colon, stmt):
@@ -195,6 +260,9 @@ class LabelStmt(Stmt):
         self.stmt = stmt
     def __str__(self):
         return "".join(map(str, (self.label, self.colon, self.stmt)))
+    def apply_function(self, func):
+        self.stmt = self.stmt.apply_function(func)
+        return func(self)
 
 class CaseStmt(LabelStmt):
     def __init__(self, case_word, expr, colon, stmt):
@@ -212,6 +280,9 @@ class SingleLabelStmt(Stmt):
         return (str(self.op) +
                 str(self.colon) +
                 str(self.stmt))
+    def apply_function(self, func):
+        self.stmt = self.stmt.apply_function(func)
+        return func(self)
 
 class ExprLabelStmt(SingleLabelStmt):
     def __init__(self, case_word, expr, colon, stmt):
@@ -222,6 +293,9 @@ class ExprLabelStmt(SingleLabelStmt):
                                  self.expr,
                                  self.colon,
                                  self.stmt)))
+    def apply_function(self, func):
+        self.expr = self.expr.apply_function(func)
+        return SingleLabelStmt.apply_function(self, func)
 
 class CompoundStmt(Stmt, MyList):
     def __init__(self, open_brace):

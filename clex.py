@@ -17,6 +17,8 @@ class Token(object):
         return self.value
     def give_back(self):
         return [self]
+    def apply_function(self, func):
+        return func(self)
 
 class Tokenizer(object):
     def __init__(self, string, ignore_errors=False):
